@@ -128,6 +128,53 @@ func TestConvertProxiedRequest(t *testing.T) {
 	}
 }
 
+func TestConvertProxiedRequestWithMixedCaseHeaders(t *testing.T) {
+	proxyHeaders := make(map[string]string)
+	proxyHeaders["content-type"] = "application/x-www-form-urlencoded"
+
+	proxyBody := "email=noreply%2Btest%40srs.bizn.as&secondary=expected_value"
+
+	proxiedRequest := events.APIGatewayProxyRequest{
+		HTTPMethod: "POST",
+		Headers:    proxyHeaders,
+		Body:       proxyBody,
+	}
+
+	httpRequest, err := convertProxiedRequest(proxiedRequest)
+
+	if err != nil {
+		t.Errorf("Error converting proxied request to http request (%q)", err)
+	}
+
+	if httpRequest.Method != "POST" {
+		t.Errorf("HTTP Method is incorrect: %s", httpRequest.Method)
+	}
+
+	headers := httpRequest.Header
+	contentType := headers.Get("Content-Type")
+
+	expectedContentType := "application/x-www-form-urlencoded"
+
+	if expectedContentType != contentType {
+		t.Errorf("Content Type did not match: (%q)", contentType)
+	}
+
+	form := httpRequest.PostForm
+
+	if form == nil {
+		t.Errorf("Post form is empty when is should not be")
+	}
+
+	ev := url.Values{}
+
+	ev.Add("email", "noreply+test@srs.bizn.as")
+	ev.Add("secondary", "expected_value")
+
+	if !reflect.DeepEqual(form, ev) {
+		t.Errorf("Post form does not match expected: (%p)", form)
+	}
+}
+
 func TestEnsureOutputMapLinesUp(t *testing.T) {
 
 	postForm := url.Values{}

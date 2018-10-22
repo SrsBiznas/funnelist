@@ -23,7 +23,10 @@ import (
 
 func convertProxiedRequest(request events.APIGatewayProxyRequest) (http.Request, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Add("Content-Type", request.Headers["Content-Type"])
+
+	for k := range request.Headers {
+		reqHeaders.Add(k, request.Headers[k])
+	}
 
 	r := http.Request{
 		Header: reqHeaders,
